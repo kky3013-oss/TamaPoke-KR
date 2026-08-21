@@ -39,10 +39,10 @@ if '// ---------------- KO ----------------' not in isrc:
 # Add Korean medal rows.
 def add_row(table_name, row):
     global isrc
-    pat = r'(static const char \\*const ' + table_name + r'\\[LANG_COUNT\\]\\[MED_COUNT\\] = \\{.*?\\n\\};)'
+    pat = r'(static const char \*const ' + table_name + r'\[LANG_COUNT\]\[MED_COUNT\] = \{.*?\n\};)'
     m = re.search(pat, isrc, re.S)
     if not m:
-        return
+        raise RuntimeError(f'Could not locate {table_name}')
     block = m.group(1)
     if row.strip() not in block:
         block = block[:-3] + row + '};'
