@@ -1,0 +1,59 @@
+name: Apply Korean + build ESP32-S3
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Apply Korean language and keyboard patch
+        run: python3 tools/apply_korean_keyboard.py
+
+      - name: Commit patched firmware sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TamaPoke.ino i18n.h i18n.cpp
+          if git diff --cached --quiet; then
+            echo "No source patch changes to commit."
+          else
+            git commit -m "Add Korean UI and Chunjiin keyboard"
+            git push
+          fi
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Configure Arduino CLI
+        run: |
+          arduino-cli config init
+          arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli lib update-index
+          arduino-cli lib install "GFX Library for Arduino"
+          arduino-cli lib install "SensorLib"
+          arduino-cli lib install "U8g2"
+
+      - name: Compile patched firmware
+        run: |
+          mkdir -p build
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --output-dir build
+
+      - name: Upload compile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamapoke-kr-korean-keyboard-test
+          path: build/*.bin
+          if-no-files-found: error
