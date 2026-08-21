@@ -21,6 +21,8 @@
 #include "rtcbat.h"
 #include "i18n.h"
 #include "audio.h"
+#include "kr_text.h"
+#include "kr_keyboard.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -63,7 +65,7 @@ int16_t galleryDetail = 0;  // dex en vista detalle, 0 = rejilla
 bool screenOff = false;       // pulsacion corta del boton PWR
 bool cardOpen = false;        // ficha del bicho (deslizar vertical)
 bool kbOpen = false;          // teclado para renombrar al bicho
-char nameBuf[12] = "";
+char nameBuf[64] = "";
 uint8_t nameLen = 0;
 uint8_t cardPage = 0;         // 0 perfil, 1 stats+medallas
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
@@ -182,6 +184,8 @@ void setup() {
   // QSPI a 80MHz (por defecto 40): el flush del framebuffer es el cuello de
   // botella del fps (~56ms a 40MHz). Si el panel mostrara basura, bajar a 40M.
   if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");
+  krTextBegin();
+  krKeyboardBegin();
   panel->setBrightness(180);
 
   touch.setPins(TP_RESET, TP_INT);
@@ -780,10 +784,10 @@ void renderStarterSelect() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   const char *t = T(S_CHOOSE_STARTER);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(t) * 6, 68);
-  gfx->print(t);
+  krSetCursor(gfx, CX - strlen(t) * 6, 68);
+  krPrint(gfx, t);
   for (int i = 0; i < 3; i++) {
     int16_t d = STARTER_DEX[i];
     const DexEntry &de = DEX_TBL[d];
@@ -792,10 +796,10 @@ void renderStarterSelect() {
     gfx->drawRoundRect(70, ry, 326, STARTER_ROW_H, 14, de.accent);
     const uint8_t *th = thumbs.get(d);     // miniatura del inicial (si la SD esta lista)
     if (th) drawThumb(th, 76, ry - 5, 3, false);
-    gfx->setTextColor(UI_INK);
+    krSetTextColor(gfx, UI_INK);
     gfx->setTextSize(3);
-    gfx->setCursor(178, ry + 24);
-    gfx->print(dexName(d));
+    krSetCursor(gfx, 178, ry + 24);
+    krPrint(gfx, dexName(d));
   }
   gfx->flush();
 }
@@ -856,18 +860,18 @@ void render() {
       for (auto &c : CRACK2) gfx->fillRect(x + c[0] * s, y + c[1] * s, s, s, INK_K);
     if (pet.eggRarity() >= R_RARO) {
       const char *rar = (pet.eggRarity() == R_LEGENDARIO) ? T(S_EGG_LEGEND) : T(S_EGG_RARE);
-      gfx->setTextColor(pet.eggRarity() == R_LEGENDARIO ? UI_BAR_WARN : 0x4C98);
+      krSetTextColor(gfx, pet.eggRarity() == R_LEGENDARIO ? UI_BAR_WARN : 0x4C98);
       gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(rar) * 6, 316);
-      gfx->print(rar);
+      krSetCursor(gfx, CX - strlen(rar) * 6, 316);
+      krPrint(gfx, rar);
     }
     char reg[24];
     snprintf(reg, sizeof(reg), T(S_POKEDEX_FMT), pet.registeredCount());
     gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : UI_BG_DAY);
-    gfx->setTextColor(inkColor());
+    krSetTextColor(gfx, inkColor());
     gfx->setTextSize(2);
-    gfx->setCursor(CX - strlen(reg) * 6, 348);
-    gfx->print(reg);
+    krSetCursor(gfx, CX - strlen(reg) * 6, 348);
+    krPrint(gfx, reg);
   } else {
     const DexEntry &d = DEX_TBL[pet.speciesId];
     char name[28];
@@ -889,10 +893,10 @@ void render() {
   }
 
   if (pet.sleeping) {
-    gfx->setTextColor(UI_INK_NIGHT);
+    krSetTextColor(gfx, UI_INK_NIGHT);
     gfx->setTextSize(3);
-    gfx->setCursor(320, 130);
-    gfx->print("Zz");
+    krSetCursor(gfx, 320, 130);
+    krPrint(gfx, "Zz");
   }
 
   // selector de comida
@@ -918,17 +922,17 @@ void render() {
       gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
       char q[28];
       snprintf(q, sizeof(q), T(S_RELEASE_FMT), dexName(pet.speciesId));
-      gfx->setTextColor(UI_INK);
+      krSetTextColor(gfx, UI_INK);
       gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(q) * 6, 196);
-      gfx->print(q);
+      krSetCursor(gfx, CX - strlen(q) * 6, 196);
+      krPrint(gfx, q);
       gfx->fillRoundRect(118, 252, 100, 52, 12, UI_BAR_OK);
-      gfx->setTextColor(UI_WHITE);
-      gfx->setCursor(118 + (100 - (int)strlen(T(S_YES)) * 12) / 2, 270);
-      gfx->print(T(S_YES));
+      krSetTextColor(gfx, UI_WHITE);
+      krSetCursor(gfx, 118 + (100 - (int)strlen(T(S_YES)) * 12) / 2, 270);
+      krPrint(gfx, T(S_YES));
       gfx->fillRoundRect(248, 252, 100, 52, 12, UI_BAR_BAD);
-      gfx->setCursor(248 + (100 - (int)strlen(T(S_NO)) * 12) / 2, 270);
-      gfx->print(T(S_NO));
+      krSetCursor(gfx, 248 + (100 - (int)strlen(T(S_NO)) * 12) / 2, 270);
+      krPrint(gfx, T(S_NO));
     }
   }
 
@@ -1053,27 +1057,27 @@ void renderSack() {
     if (now > sackOverUntil) { sackOpen = false; return; }
     char b[20];
     snprintf(b, sizeof(b), T(S_HITS_FMT), sackHits);
-    gfx->setTextColor(ink);
+    krSetTextColor(gfx, ink);
     gfx->setTextSize(4);
-    gfx->setCursor(CX - strlen(b) * 12, 150);
-    gfx->print(b);
+    krSetCursor(gfx, CX - strlen(b) * 12, 150);
+    krPrint(gfx, b);
     char g[18];
     snprintf(g, sizeof(g), T(S_STR_GAIN_FMT), sackGain);
-    gfx->setTextColor(UI_BAR_BAD);
+    krSetTextColor(gfx, UI_BAR_BAD);
     gfx->setTextSize(3);
-    gfx->setCursor(CX - strlen(g) * 9, 210);
-    gfx->print(g);
+    krSetCursor(gfx, CX - strlen(g) * 9, 210);
+    krPrint(gfx, g);
     gfx->setTextSize(2);
     if (sackNewHi && sackHits > 0) {
-      gfx->setTextColor(UI_BAR_WARN);
-      gfx->setCursor(CX - strlen(T(S_NEW_RECORD)) * 6, 256);
-      gfx->print(T(S_NEW_RECORD));
+      krSetTextColor(gfx, UI_BAR_WARN);
+      krSetCursor(gfx, CX - strlen(T(S_NEW_RECORD)) * 6, 256);
+      krPrint(gfx, T(S_NEW_RECORD));
     } else {
       char r[18];
       snprintf(r, sizeof(r), T(S_RECORD_FMT), pet.strHi);
-      gfx->setTextColor(ink);
-      gfx->setCursor(CX - strlen(r) * 6, 256);
-      gfx->print(r);
+      krSetTextColor(gfx, ink);
+      krSetCursor(gfx, CX - strlen(r) * 6, 256);
+      krPrint(gfx, r);
     }
     gfx->flush();
     return;
@@ -1103,14 +1107,14 @@ void renderSack() {
   // contador de golpes
   char buf[8];
   snprintf(buf, sizeof(buf), "%u", sackHits);
-  gfx->setTextColor(ink);
+  krSetTextColor(gfx, ink);
   gfx->setTextSize(6);
-  gfx->setCursor(CX - strlen(buf) * 18, 268);
-  gfx->print(buf);
+  krSetCursor(gfx, CX - strlen(buf) * 18, 268);
+  krPrint(gfx, buf);
 
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_HIT_FAST)) * 6, 322);
-  gfx->print(T(S_HIT_FAST));
+  krSetCursor(gfx, CX - strlen(T(S_HIT_FAST)) * 6, 322);
+  krPrint(gfx, T(S_HIT_FAST));
 
   // barra de tiempo
   uint32_t left = sackUntil - now;
@@ -1156,26 +1160,26 @@ void renderGame() {
     }
     char buf[22];
     snprintf(buf, sizeof(buf), T(S_SCORE_FMT), gameScore);
-    gfx->setTextColor(ink);
+    krSetTextColor(gfx, ink);
     gfx->setTextSize(4);
-    gfx->setCursor(CX - strlen(buf) * 12, 160);
-    gfx->print(buf);
+    krSetCursor(gfx, CX - strlen(buf) * 12, 160);
+    krPrint(gfx, buf);
     gfx->setTextSize(2);
     if (gameNewHi && gameScore > 0) {
-      gfx->setTextColor(UI_BAR_WARN);
-      gfx->setCursor(CX - strlen(T(S_NEW_RECORD)) * 6, 214);
-      gfx->print(T(S_NEW_RECORD));
+      krSetTextColor(gfx, UI_BAR_WARN);
+      krSetCursor(gfx, CX - strlen(T(S_NEW_RECORD)) * 6, 214);
+      krPrint(gfx, T(S_NEW_RECORD));
     } else {
       char rec[20];
       snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.gameHi);
-      gfx->setTextColor(ink);
-      gfx->setCursor(CX - strlen(rec) * 6, 214);
-      gfx->print(rec);
+      krSetTextColor(gfx, ink);
+      krSetCursor(gfx, CX - strlen(rec) * 6, 214);
+      krPrint(gfx, rec);
     }
     const char *msg = gameScore >= 10 ? T(S_GREAT_JOY) : T(S_PLUS_JOY);
-    gfx->setTextColor(ink);
-    gfx->setCursor(CX - strlen(msg) * 6, 250);
-    gfx->print(msg);
+    krSetTextColor(gfx, ink);
+    krSetCursor(gfx, CX - strlen(msg) * 6, 250);
+    krPrint(gfx, msg);
     gfx->flush();
     return;
   }
@@ -1186,15 +1190,15 @@ void renderGame() {
   // marcador, record y vidas
   char buf[8];
   snprintf(buf, sizeof(buf), "%u", gameScore);
-  gfx->setTextColor(ink);
+  krSetTextColor(gfx, ink);
   gfx->setTextSize(4);
-  gfx->setCursor(CX - strlen(buf) * 12, 30);
-  gfx->print(buf);
+  krSetCursor(gfx, CX - strlen(buf) * 12, 30);
+  krPrint(gfx, buf);
   char rec[12];
   snprintf(rec, sizeof(rec), T(S_REC_FMT), pet.gameHi);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(rec) * 6, 76);
-  gfx->print(rec);
+  krSetCursor(gfx, CX - strlen(rec) * 6, 76);
+  krPrint(gfx, rec);
   for (int i = 0; i < 3; i++) {
     if (i < 3 - gameMisses) gfx->fillCircle(180 + i * 28, 104, 6, UI_BAR_BAD);
     else gfx->drawCircle(180 + i * 28, 104, 6, UI_TRACK);
@@ -1236,14 +1240,14 @@ void renderGame() {
 // ---------- ficha del bicho (deslizar vertical) ----------
 
 void drawCardStat(int y, const char *label, uint16_t val, uint16_t maxBar, uint16_t color) {
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(96, y);
-  gfx->print(label);
+  krSetCursor(gfx, 96, y);
+  krPrint(gfx, label);
   char num[8];
   snprintf(num, sizeof(num), "%u", val);
-  gfx->setCursor(330, y);
-  gfx->print(num);
+  krSetCursor(gfx, 330, y);
+  krPrint(gfx, num);
   int bw = 160;
   int fw = (int)val * bw / maxBar;
   if (fw > bw) fw = bw;
@@ -1273,10 +1277,10 @@ void applyClock() {
 void drawClockBtn(int x, int y, const char *l) {
   gfx->fillRoundRect(x, y, 58, 58, 12, UI_WHITE);
   gfx->drawRoundRect(x, y, 58, 58, 12, UI_INK);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(4);
-  gfx->setCursor(x + 17, y + 15);
-  gfx->print(l);
+  krSetCursor(gfx, x + 17, y + 15);
+  krPrint(gfx, l);
 }
 
 // pildoras de idioma centradas en y; rellena la activa
@@ -1284,70 +1288,70 @@ void drawClockBtn(int x, int y, const char *l) {
 #define LANG_PILL_H 30
 #define LANG_PILL_X 336          // pildora de idioma (cicla los 6 al tocar)
 #define LANG_PILL_W 96
-static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT" };
+static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT", "KO" };
 
 void renderClock() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_SET_TIME)) * 9, 44);
-  gfx->print(T(S_SET_TIME));
+  krSetCursor(gfx, CX - strlen(T(S_SET_TIME)) * 9, 44);
+  krPrint(gfx, T(S_SET_TIME));
 
   char t[8];
   snprintf(t, sizeof(t), "%02d:%02d", clockH, clockM);
   gfx->setTextSize(7);
-  gfx->setCursor(CX - 105, 108);
-  gfx->print(t);
+  krSetCursor(gfx, CX - 105, 108);
+  krPrint(gfx, t);
 
   drawClockBtn(104, 190, "-");  // hora -
   drawClockBtn(170, 190, "+");  // hora +
   drawClockBtn(252, 190, "-");  // min -
   drawClockBtn(318, 190, "+");  // min +
   gfx->setTextSize(2);
-  gfx->setTextColor(UI_TRACK);
-  gfx->setCursor(120, 256);
-  gfx->print(T(S_HOUR));
-  gfx->setCursor(276, 256);
-  gfx->print(T(S_MIN));
+  krSetTextColor(gfx, UI_TRACK);
+  krSetCursor(gfx, 120, 256);
+  krPrint(gfx, T(S_HOUR));
+  krSetCursor(gfx, 276, 256);
+  krPrint(gfx, T(S_MIN));
 
   // interruptor de sonido (izquierda de la fila de idioma)
   bool snd = audioEnabled();
   const char *sl = snd ? T(S_SND_ON) : T(S_SND_OFF);
   gfx->fillRoundRect(34, LANG_PILL_Y, 96, LANG_PILL_H, 8, snd ? UI_BAR_OK : UI_WHITE);
   gfx->drawRoundRect(34, LANG_PILL_Y, 96, LANG_PILL_H, 8, UI_INK);
-  gfx->setTextColor(snd ? UI_BG_DAY : UI_INK);
+  krSetTextColor(gfx, snd ? UI_BG_DAY : UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(34 + (96 - (int)strlen(sl) * 12) / 2, LANG_PILL_Y + 8);
-  gfx->print(sl);
+  krSetCursor(gfx, 34 + (96 - (int)strlen(sl) * 12) / 2, LANG_PILL_Y + 8);
+  krPrint(gfx, sl);
 
   // selector de idioma: una pildora que cicla los 6 idiomas al tocar
   gfx->fillRoundRect(LANG_PILL_X, LANG_PILL_Y, LANG_PILL_W, LANG_PILL_H, 8, UI_WHITE);
   gfx->drawRoundRect(LANG_PILL_X, LANG_PILL_Y, LANG_PILL_W, LANG_PILL_H, 8, UI_INK);
   char lp[10];
   snprintf(lp, sizeof(lp), "%s >", LANG_CODES[gLang]);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(LANG_PILL_X + (LANG_PILL_W - (int)strlen(lp) * 12) / 2, LANG_PILL_Y + 8);
-  gfx->print(lp);
+  krSetCursor(gfx, LANG_PILL_X + (LANG_PILL_W - (int)strlen(lp) * 12) / 2, LANG_PILL_Y + 8);
+  krPrint(gfx, lp);
 
   gfx->fillRoundRect(133, 340, 200, 48, 14, UI_BAR_OK);
-  gfx->setTextColor(UI_BG_DAY);
+  krSetTextColor(gfx, UI_BG_DAY);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - 18, 352);
-  gfx->print("OK");
+  krSetCursor(gfx, CX - 18, 352);
+  krPrint(gfx, "OK");
 
-  gfx->setTextColor(UI_TRACK);
+  krSetTextColor(gfx, UI_TRACK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_CLOCK_CANCEL)) * 6, 410);
-  gfx->print(T(S_CLOCK_CANCEL));
+  krSetCursor(gfx, CX - strlen(T(S_CLOCK_CANCEL)) * 6, 410);
+  krPrint(gfx, T(S_CLOCK_CANCEL));
 
   // version del firmware (discreta, abajo del todo)
   char ver[20];
   snprintf(ver, sizeof(ver), "TamaPoke v%s", FW_VERSION);
   gfx->setTextSize(1);
-  gfx->setCursor(CX - (int)strlen(ver) * 3, 436);
-  gfx->print(ver);
+  krSetCursor(gfx, CX - (int)strlen(ver) * 3, 436);
+  krPrint(gfx, ver);
   gfx->flush();
 }
 
@@ -1382,10 +1386,10 @@ void drawStreakBadge() {
   gfx->fillTriangle(x + 8, y + 7, x + 4, y + 17, x + 12, y + 17, UI_BAR_WARN);
   char s[6];
   snprintf(s, sizeof(s), "%u", pet.streak);
-  gfx->setTextColor(inkColor());
+  krSetTextColor(gfx, inkColor());
   gfx->setTextSize(2);
-  gfx->setCursor(x + 22, y + 2);
-  gfx->print(s);
+  krSetCursor(gfx, x + 22, y + 2);
+  krPrint(gfx, s);
 }
 
 // banner temporal: medalla nueva o hito de racha
@@ -1404,13 +1408,13 @@ void drawCelebration() {
   if (!l1) return;
   gfx->fillRoundRect(73, 150, 320, 96, 16, UI_BAR_WARN);
   gfx->drawRoundRect(73, 150, 320, 96, 16, UI_INK);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(l1) * 9, 176);
-  gfx->print(l1);
+  krSetCursor(gfx, CX - strlen(l1) * 9, 176);
+  krPrint(gfx, l1);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(l2) * 6, 212);
-  gfx->print(l2);
+  krSetCursor(gfx, CX - strlen(l2) * 6, 212);
+  krPrint(gfx, l2);
 }
 
 // medallas en la ficha: badge con etiqueta, color si conseguida
@@ -1418,10 +1422,10 @@ void drawMedalBadge(int x, int y, int i) {
   bool got = pet.hasMedal(1 << i);
   gfx->fillRoundRect(x, y, 100, 24, 6, got ? UI_BAR_OK : UI_TRACK);
   if (!got) gfx->drawRoundRect(x, y, 100, 24, 6, UI_TRACK);
-  gfx->setTextColor(got ? UI_BG_DAY : 0x9492);
+  krSetTextColor(gfx, got ? UI_BG_DAY : 0x9492);
   gfx->setTextSize(2);
-  gfx->setCursor(x + (100 - (int)strlen(medalLabel(i)) * 12) / 2, y + 5);
-  gfx->print(medalLabel(i));
+  krSetCursor(gfx, x + (100 - (int)strlen(medalLabel(i)) * 12) / 2, y + 5);
+  krPrint(gfx, medalLabel(i));
 }
 
 // pagina 0: perfil (retrato grande, identidad, racha, vinculo, baya)
@@ -1430,19 +1434,19 @@ void renderCardProfile() {
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   char head[26];
   snprintf(head, sizeof(head), T(S_NAME_FMT), pet.shiny ? "*" : "", nm, pet.level());
-  gfx->setTextColor(d.accent);
+  krSetTextColor(gfx, d.accent);
   // auto-encoge: a tamano 3 los nombres largos no caben en la franja estrecha de
   // arriba de la pantalla redonda, asi que se cortaban por el borde
   int hlen = strlen(head);
   int hts = (hlen <= 11) ? 3 : 2;
   gfx->setTextSize(hts);
-  gfx->setCursor(CX - hlen * (hts == 3 ? 9 : 6), hts == 3 ? 34 : 40);
-  gfx->print(head);
+  krSetCursor(gfx, CX - hlen * (hts == 3 ? 9 : 6), hts == 3 ? 34 : 40);
+  krPrint(gfx, head);
   if (pet.nick[0]) {  // especie real bajo el apodo
     const char *sp = dexName(pet.speciesId);
-    gfx->setTextColor(UI_TRACK);
+    krSetTextColor(gfx, UI_TRACK);
     gfx->setTextSize(2);
-    gfx->setCursor(CX - (strlen(sp) + 2) * 6, 64);
+    krSetCursor(gfx, CX - (strlen(sp) + 2) * 6, 64);
     gfx->printf("(%s)", sp);
   }
 
@@ -1455,10 +1459,10 @@ void renderCardProfile() {
   gfx->fillTriangle(sx + 8, sy + 7, sx + 4, sy + 18, sx + 12, sy + 18, UI_BAR_WARN);
   char rl[30];
   snprintf(rl, sizeof(rl), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(sx + 24, sy + 2);
-  gfx->print(rl);
+  krSetCursor(gfx, sx + 24, sy + 2);
+  krPrint(gfx, rl);
 
   drawCardStat(258, T(S_VIN), pet.bond, 100, C565(0xd4, 0x52, 0x7e));
 
@@ -1469,22 +1473,22 @@ void renderCardProfile() {
   char info[40];
   snprintf(info, sizeof(info), T(S_INFO_FMT), berry,
            (unsigned long)(pet.ageMinutes / 1440));
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(info) * 6, 296);
-  gfx->print(info);
+  krSetCursor(gfx, CX - strlen(info) * 6, 296);
+  krPrint(gfx, info);
 
-  gfx->setTextColor(UI_TRACK);
-  gfx->setCursor(CX - strlen(T(S_RENAME_HINT)) * 6, 332);
-  gfx->print(T(S_RENAME_HINT));
+  krSetTextColor(gfx, UI_TRACK);
+  krSetCursor(gfx, CX - strlen(T(S_RENAME_HINT)) * 6, 332);
+  krPrint(gfx, T(S_RENAME_HINT));
 }
 
 // pagina 1: combate (4 barras + boton de entrenar)
 void renderCardStats() {
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_BATTLE)) * 9, 48);
-  gfx->print(T(S_BATTLE));
+  krSetCursor(gfx, CX - strlen(T(S_BATTLE)) * 9, 48);
+  krPrint(gfx, T(S_BATTLE));
 
   drawCardStat(118, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
   drawCardStat(160, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
@@ -1493,10 +1497,10 @@ void renderCardStats() {
 
   // boton: saco de entrenamiento de fuerza
   gfx->fillRoundRect(96, 300, 274, 40, 12, UI_BAR_BAD);
-  gfx->setTextColor(UI_BG_DAY);
+  krSetTextColor(gfx, UI_BG_DAY);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_TRAIN_STR)) * 6, 311);
-  gfx->print(T(S_TRAIN_STR));
+  krSetCursor(gfx, CX - strlen(T(S_TRAIN_STR)) * 6, 311);
+  krPrint(gfx, T(S_TRAIN_STR));
 }
 
 // pagina 2: medallas con etiqueta descriptiva
@@ -1506,10 +1510,10 @@ void renderCardMedals() {
     if (pet.hasMedal(1 << i)) got++;
   char head[20];
   snprintf(head, sizeof(head), T(S_MEDALS_FMT), got, MED_COUNT);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(head) * 9, 48);
-  gfx->print(head);
+  krSetCursor(gfx, CX - strlen(head) * 9, 48);
+  krPrint(gfx, head);
 
   for (int i = 0; i < MED_COUNT; i++) {
     int x = 28 + (i % 2) * 206, y = 104 + (i / 2) * 54;
@@ -1517,15 +1521,15 @@ void renderCardMedals() {
     gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
     if (g) {  // marca de conseguida
       gfx->fillCircle(x + 22, y + 22, 11, UI_BG_DAY);
-      gfx->setTextColor(UI_BAR_OK);
+      krSetTextColor(gfx, UI_BAR_OK);
       gfx->setTextSize(2);
-      gfx->setCursor(x + 16, y + 13);
-      gfx->print("v");
+      krSetCursor(gfx, x + 16, y + 13);
+      krPrint(gfx, "v");
     }
-    gfx->setTextColor(g ? UI_BG_DAY : 0x8410);
+    krSetTextColor(gfx, g ? UI_BG_DAY : 0x8410);
     gfx->setTextSize(2);
-    gfx->setCursor(x + 44, y + 14);
-    gfx->print(medalDesc(i));
+    krSetCursor(gfx, x + 44, y + 14);
+    krPrint(gfx, medalDesc(i));
   }
 }
 
@@ -1533,17 +1537,17 @@ void renderCardMedals() {
 // que antes eran invisibles (cuanto falta para subir/evolucionar y por que)
 void renderCardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(T(S_PROGRESS)) * 9, 44);
-  gfx->print(T(S_PROGRESS));
+  krSetCursor(gfx, CX - strlen(T(S_PROGRESS)) * 9, 44);
+  krPrint(gfx, T(S_PROGRESS));
 
   // nivel grande
   char lv[10];
   snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
   gfx->setTextSize(5);
-  gfx->setCursor(CX - strlen(lv) * 15, 86);
-  gfx->print(lv);
+  krSetCursor(gfx, CX - strlen(lv) * 15, 86);
+  krPrint(gfx, lv);
 
   // barra de progreso al siguiente nivel (1 nivel = 60 min de juego)
   uint8_t into = pet.ageMinutes % MINUTES_PER_LEVEL;
@@ -1553,15 +1557,15 @@ void renderCardProgress() {
   if (fw > 0) gfx->fillRoundRect(bx + 2, by + 2, fw, bh - 4, 5, UI_BAR_OK);
   char nx[26];
   snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(nx) * 6, by + 32);
-  gfx->print(nx);
+  krSetCursor(gfx, CX - strlen(nx) * 6, by + 32);
+  krPrint(gfx, nx);
 
   // estado de evolucion
-  gfx->setTextColor(UI_TRACK);
-  gfx->setCursor(CX - strlen(T(S_EVO_LABEL)) * 6, 230);
-  gfx->print(T(S_EVO_LABEL));
+  krSetTextColor(gfx, UI_TRACK);
+  krSetCursor(gfx, CX - strlen(T(S_EVO_LABEL)) * 6, 230);
+  krPrint(gfx, T(S_EVO_LABEL));
   char evoBuf[28];
   const char *evo;
   uint16_t evoCol = UI_INK;
@@ -1577,16 +1581,16 @@ void renderCardProgress() {
       evo = evoBuf;
     }
   }
-  gfx->setTextColor(evoCol);
-  gfx->setCursor(CX - strlen(evo) * 6, 256);
-  gfx->print(evo);
+  krSetTextColor(gfx, evoCol);
+  krSetCursor(gfx, CX - strlen(evo) * 6, 256);
+  krPrint(gfx, evo);
 
   // descuidos (retrasan la evolucion)
   char ms[24];
   snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
-  gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : UI_INK);
-  gfx->setCursor(CX - strlen(ms) * 6, 312);
-  gfx->print(ms);
+  krSetTextColor(gfx, pet.careMistakes > 0 ? UI_BAR_BAD : UI_INK);
+  krSetCursor(gfx, CX - strlen(ms) * 6, 312);
+  krPrint(gfx, ms);
 }
 
 void renderCard() {
@@ -1602,75 +1606,34 @@ void renderCard() {
     if (i == cardPage) gfx->fillCircle(194 + i * 26, 374, 5, UI_INK);
     else gfx->drawCircle(194 + i * 26, 374, 4, UI_INK);
   }
-  gfx->setTextColor(UI_TRACK);
+  krSetTextColor(gfx, UI_TRACK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_BACK)) * 6, 398);
-  gfx->print(T(S_BACK));
+  krSetCursor(gfx, CX - strlen(T(S_BACK)) * 6, 398);
+  krPrint(gfx, T(S_BACK));
   gfx->flush();
 }
 
 // ---------- teclado para renombrar ----------
 
-static const char KB_KEYS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.-";  // 28 + DEL + OK = 30
-#define KB_COLS 6
-#define KB_X 40
-#define KB_Y 150
-#define KB_W 64
-#define KB_H 52
-
 void openKeyboard() {
   kbOpen = true;
-  strncpy(nameBuf, pet.nick, sizeof(nameBuf) - 1);
-  nameBuf[sizeof(nameBuf) - 1] = 0;
-  nameLen = strlen(nameBuf);
+  krKeyboardOpen(pet.nick, nameBuf, sizeof(nameBuf));
+  nameLen = (uint8_t)strlen(nameBuf);
 }
 
 void renderKeyboard() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  gfx->setTextColor(UI_INK);
-  gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(T(S_NAME)) * 6, 56);
-  gfx->print(T(S_NAME));
-  // buffer actual
-  gfx->fillRoundRect(83, 84, 300, 40, 8, UI_WHITE);
-  gfx->drawRoundRect(83, 84, 300, 40, 8, UI_INK);
-  gfx->setTextSize(3);
-  gfx->setCursor(95, 94);
-  gfx->print(nameLen ? nameBuf : "_");
-
-  for (int i = 0; i < 30; i++) {
-    int x = KB_X + (i % KB_COLS) * KB_W, y = KB_Y + (i / KB_COLS) * KB_H;
-    bool special = (i >= 28);
-    gfx->fillRoundRect(x, y, KB_W - 6, KB_H - 6, 6, special ? UI_BAR_WARN : UI_WHITE);
-    gfx->drawRoundRect(x, y, KB_W - 6, KB_H - 6, 6, UI_INK);
-    gfx->setTextColor(UI_INK);
-    gfx->setTextSize(2);
-    if (i < 28) {
-      gfx->setCursor(x + KB_W / 2 - 9, y + KB_H / 2 - 10);
-      gfx->print(KB_KEYS[i]);
-    } else {
-      const char *lab = (i == 28) ? "<-" : "OK";
-      gfx->setCursor(x + KB_W / 2 - 15, y + KB_H / 2 - 10);
-      gfx->print(lab);
-    }
-  }
-  gfx->flush();
+  static bool koreanMode = false;
+  krKeyboardRender(gfx, nameBuf, koreanMode);
 }
 
 void keyboardTap(int16_t x, int16_t y) {
-  int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
-  if (col < 0 || col >= KB_COLS || row < 0 || row >= 5) return;
-  int i = row * KB_COLS + col;
-  if (i >= 30) return;
-  if (i == 28) {  // borrar
-    if (nameLen) nameBuf[--nameLen] = 0;
-  } else if (i == 29) {  // OK
+  static bool koreanMode = false;
+  bool closeKeyboard = false;
+  krKeyboardTap(x, y, koreanMode, nameBuf, sizeof(nameBuf), closeKeyboard);
+  nameLen = (uint8_t)strlen(nameBuf);
+  if (closeKeyboard) {
     pet.rename(nameBuf);
     kbOpen = false;
-  } else if (nameLen < sizeof(nameBuf) - 1) {
-    nameBuf[nameLen++] = KB_KEYS[i];
-    nameBuf[nameLen] = 0;
   }
 }
 
@@ -1706,12 +1669,12 @@ void renderGallery() {
     char head[24];
     snprintf(head, sizeof(head), "N.%03d %s%s", galleryDetail,
              pet.isShinyRegistered(galleryDetail) ? "*" : "", reg ? dexName(galleryDetail) : "???");
-    gfx->setTextColor(reg ? d.accent : UI_INK);
+    krSetTextColor(gfx, reg ? d.accent : UI_INK);
     int glen = strlen(head);
     int gts = (glen <= 13) ? 3 : 2;  // auto-encoge nombres largos (no caben a t3)
     gfx->setTextSize(gts);
-    gfx->setCursor(CX - glen * (gts == 3 ? 9 : 6), gts == 3 ? 56 : 60);
-    gfx->print(head);
+    krSetCursor(gfx, CX - glen * (gts == 3 ? 9 : 6), gts == 3 ? 56 : 60);
+    krPrint(gfx, head);
     if (galleryPmd.loaded) {
       // animado y a color si esta registrado; silueta estatica si no (estilo "?")
       drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, reg ? millis() : 0, true, !reg, 6);
@@ -1719,10 +1682,10 @@ void renderGallery() {
       const uint8_t *t = thumbs.get(galleryDetail);
       if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !reg);
     }
-    gfx->setTextColor(UI_INK);
+    krSetTextColor(gfx, UI_INK);
     gfx->setTextSize(2);
-    gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
-    gfx->print(T(S_DETAIL_BACK));
+    krSetCursor(gfx, CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
+    krPrint(gfx, T(S_DETAIL_BACK));
     gfx->flush();
     return;
   }
@@ -1734,10 +1697,10 @@ void renderGallery() {
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   char head[24];
   snprintf(head, sizeof(head), T(S_POKEDEX_FMT), pet.registeredCount());
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(head) * 9, 36);
-  gfx->print(head);
+  krSetCursor(gfx, CX - strlen(head) * 9, 36);
+  krPrint(gfx, head);
 
   for (int r = 0; r < 4; r++) {
     for (int c = 0; c < 4; c++) {
@@ -1748,18 +1711,18 @@ void renderGallery() {
       if (t) {
         drawThumb(t, x, y, 2, !pet.isRegistered(dex));
         if (pet.isShinyRegistered(dex)) {
-          gfx->setTextColor(UI_BAR_WARN);
+          krSetTextColor(gfx, UI_BAR_WARN);
           gfx->setTextSize(2);
-          gfx->setCursor(x + 62, y + 4);
-          gfx->print("*");
+          krSetCursor(gfx, x + 62, y + 4);
+          krPrint(gfx, "*");
         }
       } else {
         char num[6];
         snprintf(num, sizeof(num), "%d", dex);
-        gfx->setTextColor(UI_TRACK);
+        krSetTextColor(gfx, UI_TRACK);
         gfx->setTextSize(2);
-        gfx->setCursor(x + 24, y + 32);
-        gfx->print(num);
+        krSetCursor(gfx, x + 24, y + 32);
+        krPrint(gfx, num);
       }
     }
   }
@@ -1816,14 +1779,14 @@ void drawBattery() {
 
 void drawHeader(const char *name, uint16_t nameColor, const char *msg) {
   drawBattery();
-  gfx->setTextColor(nameColor);
+  krSetTextColor(gfx, nameColor);
   gfx->setTextSize(3);
-  gfx->setCursor(CX - strlen(name) * 9, 52);
-  gfx->print(name);
-  gfx->setTextColor(inkColor());
+  krSetCursor(gfx, CX - strlen(name) * 9, 52);
+  krPrint(gfx, name);
+  krSetTextColor(gfx, inkColor());
   gfx->setTextSize(2);
-  gfx->setCursor(CX - strlen(msg) * 6, 90);
-  gfx->print(msg);
+  krSetCursor(gfx, CX - strlen(msg) * 6, 90);
+  krPrint(gfx, msg);
 }
 
 // animacion de la ceremonia (10s): despedida = reverencia con corazones y se
@@ -1899,18 +1862,18 @@ void drawChoiceDialog() {
   }
   gfx->fillRoundRect(73, 156, 320, 188, 16, UI_WHITE);
   gfx->drawRoundRect(73, 156, 320, 188, 16, UI_INK);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - (int)strlen(q) * 6, 176);
-  gfx->print(q);
+  krSetCursor(gfx, CX - (int)strlen(q) * 6, 176);
+  krPrint(gfx, q);
   gfx->fillRoundRect(93, 206, 280, 52, 12, c1);     // boton accion
-  gfx->setTextColor(t1);
-  gfx->setCursor(CX - (int)strlen(o1) * 6, 224);
-  gfx->print(o1);
+  krSetTextColor(gfx, t1);
+  krSetCursor(gfx, CX - (int)strlen(o1) * 6, 224);
+  krPrint(gfx, o1);
   gfx->fillRoundRect(93, 268, 280, 52, 12, c2);     // boton mantener/quedaros
-  gfx->setTextColor(t2);
-  gfx->setCursor(CX - (int)strlen(o2) * 6, 286);
-  gfx->print(o2);
+  krSetTextColor(gfx, t2);
+  krSetCursor(gfx, CX - (int)strlen(o2) * 6, 286);
+  krPrint(gfx, o2);
 }
 
 // boton-CTA rojo y grande para evolucionar (pulsa para llamar la atencion)
@@ -1921,11 +1884,11 @@ void drawEvolveButton() {
   gfx->fillRoundRect(x, y, w, h, 18, UI_BAR_BAD);
   gfx->drawRoundRect(x, y, w, h, 18, UI_WHITE);
   gfx->drawRoundRect(x + 2, y + 2, w - 4, h - 4, 16, UI_WHITE);
-  gfx->setTextColor(UI_WHITE);
+  krSetTextColor(gfx, UI_WHITE);
   gfx->setTextSize(3);
   const char *t = T(S_EVO_TAP);
-  gfx->setCursor(CX - (int)strlen(t) * 9, y + h / 2 - 11);
-  gfx->print(t);
+  krSetCursor(gfx, CX - (int)strlen(t) * 9, y + h / 2 - 11);
+  krPrint(gfx, t);
 }
 
 // boton-CTA dorado de despedida: "<nombre> quiere decirte algo..."
@@ -1938,10 +1901,10 @@ void drawFarewellButton() {
   char buf[52];
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   snprintf(buf, sizeof(buf), T(S_FAREWELL_BTN), nm);
-  gfx->setTextColor(UI_INK);
+  krSetTextColor(gfx, UI_INK);
   gfx->setTextSize(2);
-  gfx->setCursor(CX - (int)strlen(buf) * 6, y + h / 2 - 8);
-  gfx->print(buf);
+  krSetCursor(gfx, CX - (int)strlen(buf) * 6, y + h / 2 - 8);
+  krPrint(gfx, buf);
 }
 
 // boton-CTA sombrio de escapada por abandono: "<nombre> se siente abandonado..."
@@ -1955,10 +1918,10 @@ void drawRunawayButton() {
   char buf[52];
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   snprintf(buf, sizeof(buf), T(S_RUNAWAY_BTN), nm);
-  gfx->setTextColor(C565(0xc8, 0xd2, 0xe0));
+  krSetTextColor(gfx, C565(0xc8, 0xd2, 0xe0));
   gfx->setTextSize(2);
-  gfx->setCursor(CX - (int)strlen(buf) * 6, y + h / 2 - 8);
-  gfx->print(buf);
+  krSetCursor(gfx, CX - (int)strlen(buf) * 6, y + h / 2 - 8);
+  krPrint(gfx, buf);
 }
 
 // animacion epica de evolucion: halo radial + rayos giratorios + parpadeo del
@@ -2009,17 +1972,17 @@ void drawPet() {
   int fi = flashIdxForDex(pet.speciesId);
   if (fi < 0) {
     // sin SD y sin sprite de flash: aviso claro de que faltan sprites
-    gfx->setTextColor(inkColor());
+    krSetTextColor(gfx, inkColor());
     gfx->setTextSize(6);
-    gfx->setCursor(CX - 18, PET_CY - 80);
-    gfx->print("?");
+    krSetCursor(gfx, CX - 18, PET_CY - 80);
+    krPrint(gfx, "?");
     gfx->setTextSize(2);
     const char *l1 = T(S_NO_SPRITES);
-    gfx->setCursor(CX - (int)strlen(l1) * 6, PET_CY - 4);
-    gfx->print(l1);
+    krSetCursor(gfx, CX - (int)strlen(l1) * 6, PET_CY - 4);
+    krPrint(gfx, l1);
     const char *l2 = T(S_LOAD_SPRITES);
-    gfx->setCursor(CX - (int)strlen(l2) * 6, PET_CY + 20);
-    gfx->print(l2);
+    krSetCursor(gfx, CX - (int)strlen(l2) * 6, PET_CY + 20);
+    krPrint(gfx, l2);
     return;
   }
   const Species &sp = SPECIES[fi];
@@ -2296,10 +2259,10 @@ void drawBars() {
 }
 
 void drawBar(int x, int y, const char *label, uint8_t val) {
-  gfx->setTextColor(inkColor());
+  krSetTextColor(gfx, inkColor());
   gfx->setTextSize(2);
-  gfx->setCursor(x, y);
-  gfx->print(label);
+  krSetCursor(gfx, x, y);
+  krPrint(gfx, label);
   int bx = x + 48, bw = 100, bh = 15;  // +48: deja sitio a etiquetas de 4 letras (EN)
   uint16_t fill = (val >= 50) ? UI_BAR_OK : (val >= 25) ? UI_BAR_WARN : UI_BAR_BAD;
   gfx->fillRoundRect(bx, y, bw, bh, 4, UI_TRACK);
