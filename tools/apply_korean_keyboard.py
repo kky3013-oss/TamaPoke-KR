@@ -13,7 +13,7 @@ s = s.replace('static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "
 
 start = s.index('// ---------- teclado para renombrar ----------')
 end = s.index('// ---------- galeria pokedex ----------', start)
-new_keyboard = '''// ---------- teclado para renombrar ----------\n\nvoid openKeyboard() {\n  kbOpen = true;\n  krKeyboardOpen(pet.nick, nameBuf, sizeof(nameBuf));\n  nameLen = (uint8_t)strlen(nameBuf);\n}\n\nvoid renderKeyboard() {\n  static bool koreanMode = false;\n  krKeyboardRender(gfx, nameBuf, koreanMode);\n}\n\nvoid keyboardTap(int16_t x, int16_t y) {\n  static bool koreanMode = false;\n  bool closeKeyboard = false;\n  krKeyboardTap(x, y, koreanMode, nameBuf, sizeof(nameBuf), closeKeyboard);\n  nameLen = (uint8_t)strlen(nameBuf);\n  if (closeKeyboard) {\n    pet.rename(nameBuf);\n    kbOpen = false;\n  }\n}\n\n'''
+new_keyboard = '''// ---------- teclado para renombrar ----------\n\nstatic bool kbKoreanMode = true;\n\nvoid openKeyboard() {\n  kbOpen = true;\n  krKeyboardOpen(pet.nick, nameBuf, sizeof(nameBuf));\n  nameLen = (uint8_t)strlen(nameBuf);\n}\n\nvoid renderKeyboard() {\n  krKeyboardRender(gfx, nameBuf, kbKoreanMode);\n}\n\nvoid keyboardTap(int16_t x, int16_t y) {\n  bool closeKeyboard = false;\n  krKeyboardTap(x, y, kbKoreanMode, nameBuf, sizeof(nameBuf), closeKeyboard);\n  nameLen = (uint8_t)strlen(nameBuf);\n  if (closeKeyboard) {\n    pet.rename(nameBuf);\n    kbOpen = false;\n  }\n}\n\n'''
 s = s[:start] + new_keyboard + s[end:]
 
 # Make every normal Arduino_GFX text print/cursor/color pass through the UTF-8 wrapper.
@@ -36,7 +36,6 @@ ko = '''  // ---------------- KO ----------------\n  {\n    "진화 중!", "냠�
 if '// ---------------- KO ----------------' not in isrc:
     isrc = isrc.replace('};\n\n// Nombres de medalla', ko + '};\n\n// Nombres de medalla', 1)
 
-# Add Korean medal rows.
 def add_row(table_name, row):
     global isrc
     pat = r'(static const char \*const ' + table_name + r'\[LANG_COUNT\]\[MED_COUNT\] = \{.*?\n\};)'
