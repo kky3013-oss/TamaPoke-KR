@@ -1,4 +1,4 @@
-name: Build Korean + ESP32-S3
+name: Build Korean TamaPoke ESP32-S3
 
 on:
   push:
@@ -10,14 +10,15 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
-      - name: Checkout current source
+      - name: Checkout source
         uses: actions/checkout@v5
 
-      - name: Verify Korean source files
+      - name: Verify Korean source
         run: |
+          set -eux
           test -f TamaPoke.ino
           test -f i18n.h
           test -f i18n.cpp
@@ -25,41 +26,52 @@ jobs:
           test -f kr_text.cpp
           test -f kr_keyboard.h
           test -f kr_keyboard.cpp
+          grep -q 'krTextBegin' TamaPoke.ino
+          grep -q 'krKeyboardBegin' TamaPoke.ino
 
       - name: Install Arduino CLI
         uses: arduino/setup-arduino-cli@v2
 
-      - name: Configure ESP32
+      - name: Install ESP32 Arduino core
         run: |
+          set -eux
           arduino-cli config init
           arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core update-index
-          arduino-cli core install esp32:esp32
+          arduino-cli core install esp32:esp32@3.0.7
+          arduino-cli core list
 
-      - name: Install required libraries
+      - name: Install exact library dependencies
         run: |
+          set -eux
           arduino-cli lib update-index
-          arduino-cli lib install "GFX Library for Arduino"
-          arduino-cli lib install "SensorLib"
-          arduino-cli lib install "U8g2"
+          arduino-cli lib install 'GFX Library for Arduino@1.6.7'
+          arduino-cli lib install 'SensorLib@0.4.0'
+          arduino-cli lib install 'U8g2'
+          arduino-cli lib list
 
-      - name: Compile Korean firmware for ESP32-S3
+      - name: Compile ESP32-S3
         run: |
+          set -eux
           rm -rf build
           mkdir -p build
-          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --output-dir build --warnings all
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --output-dir build \
+            --warnings all \
+            .
 
-      - name: Verify firmware binary
+      - name: Verify and normalize firmware artifact
         run: |
-          echo "Build output:"
+          set -eux
           find build -maxdepth 2 -type f -print
-          BIN=$(find build -maxdepth 1 -type f -name '*.bin' | head -1)
+          BIN=$(find build -type f -name '*.bin' | head -n 1)
           test -n "$BIN"
           cp "$BIN" build/tamapoke.bin
           test -s build/tamapoke.bin
           ls -lh build/tamapoke.bin
 
-      - name: Upload firmware
+      - name: Upload tamapoke.bin
         uses: actions/upload-artifact@v4
         with:
           name: tamapoke-kr-firmware
