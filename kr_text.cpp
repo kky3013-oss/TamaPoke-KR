@@ -16,16 +16,36 @@ void krSetTextColor(Arduino_Canvas *gfx, uint16_t color) {
   gfx->setTextColor(color);
 }
 
+static bool containsKorean(const char *s) {
+  for (const uint8_t *p = (const uint8_t *)s; *p;) {
+    uint32_t cp;
+    uint8_t c = *p++;
+    if (c < 0x80) cp = c;
+    else if ((c & 0xE0) == 0xC0) cp = ((c & 0x1F) << 6) | (*p++ & 0x3F);
+    else if ((c & 0xF0) == 0xE0) cp = ((c & 0x0F) << 12) | ((*p++ & 0x3F) << 6) | (*p++ & 0x3F);
+    else cp = 0;
+    if (cp >= 0xAC00 && cp <= 0xD7A3) return true;
+  }
+  return false;
+}
+
 void krPrint(Arduino_Canvas *gfx, const char *s) {
   if (!s) return;
   if (!fontReady) krTextBegin();
-
-  // Arduino_GFX has native U8g2 font support. With U8g2 installed,
-  // unifont_h_cjk provides UTF-8 Korean without a separate bitmap font.
-  gfx->setFont(u8g2_font_unifont_h_cjk);
-  gfx->setUTF8Print(true);
   gfx->setTextColor(curColor);
   gfx->setCursor(curX, curY);
+
+  if (containsKorean(s)) {
+    // Arduino_GFX has native U8g2 font support. With U8g2 installed,
+    // unifont_h_cjk provides UTF-8 Korean without a separate bitmap font.
+    gfx->setFont(u8g2_font_unifont_h_cjk);
+    gfx->setUTF8Print(true);
+  } else {
+    // Restore the firmware's original bitmap font for all existing English text.
+    gfx->setFont(nullptr);
+    gfx->setUTF8Print(false);
+  }
+
   gfx->print(s);
   curX = gfx->getCursorX();
   curY = gfx->getCursorY();
