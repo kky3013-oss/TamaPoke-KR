@@ -5,9 +5,16 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  ARDUINO_CLI_VERSION: latest
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,25 +36,33 @@ jobs:
           arduino-cli lib install "SensorLib"
           arduino-cli lib install "U8g2"
 
-      - name: Remove accidental duplicate Korean init calls
+      - name: Normalize Korean initialization
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('TamaPoke.ino')
           s = p.read_text(encoding='utf-8')
           marker = '  if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");'
-          start = s.index(marker) + len(marker)
-          end = s.index('  panel->setBrightness(180);', start)
-          block = s[start:end]
-          clean = '\n  krTextBegin();\n  krKeyboardBegin();\n'
-          s = s[:start] + clean + s[end:]
-          p.write_text(s, encoding='utf-8')
-          print('Korean init block normalized for build.')
+          end_marker = '  panel->setBrightness(180);'
+          if marker in s and end_marker in s:
+              start = s.index(marker) + len(marker)
+              end = s.index(end_marker, start)
+              s = s[:start] + '\n  krTextBegin();\n  krKeyboardBegin();\n' + s[end:]
+              p.write_text(s, encoding='utf-8')
+          else:
+              print('Initialization markers not found; leaving source unchanged.')
           PY
+
+      - name: Check sketch
+        run: |
+          test -f TamaPoke.ino
+          grep -q 'krTextBegin' TamaPoke.ino
+          grep -q 'krKeyboardBegin' TamaPoke.ino
 
       - name: Compile ESP32-S3 firmware
         run: |
-          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --output-dir build
+          mkdir -p build
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --output-dir build --warnings all
 
       - name: Verify firmware
         run: |
