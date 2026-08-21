@@ -194,6 +194,8 @@ void setup() {
   krKeyboardBegin();
   krTextBegin();
   krKeyboardBegin();
+  krTextBegin();
+  krKeyboardBegin();
   panel->setBrightness(180);
 
   touch.setPins(TP_RESET, TP_INT);
