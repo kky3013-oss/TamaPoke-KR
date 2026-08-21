@@ -219,7 +219,7 @@ static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Niv.10", "Niv.25", "Niv.50", "BAIE", "SERIE 7", "LIEN", "FORME MAX", "EN FORME" },
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA" },
-  { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA" },
+  { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA" },  { "레벨10", "레벨25", "레벨50", "열매", "7일 연속", "유대", "최종 형태", "건강" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO" },
@@ -227,7 +227,7 @@ static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Niv10", "Niv25", "Niv50", "BAIE", "7JRS", "LIEN", "MAX", "FORME" },
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT" },
-  { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT" },
+  { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT" },  { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최종", "건강" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
@@ -241,7 +241,8 @@ static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "LIVELLO 10", "LIVELLO 25", "LIVELLO 50", "BACCA TROVATA",
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
-    "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA" },
+    "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA" },  { "레벨 10", "레벨 25", "레벨 50", "열매 발견",
+    "7일 연속", "최대 유대", "최종 형태", "건강한 상태" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }

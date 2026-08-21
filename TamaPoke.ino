@@ -186,6 +186,8 @@ void setup() {
   if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");
   krTextBegin();
   krKeyboardBegin();
+  krTextBegin();
+  krKeyboardBegin();
   panel->setBrightness(180);
 
   touch.setPins(TP_RESET, TP_INT);
