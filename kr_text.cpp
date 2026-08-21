@@ -1,4 +1,5 @@
 #include "kr_text.h"
+#include <U8g2lib.h>
 
 static int16_t curX = 0, curY = 0;
 static uint16_t curColor = 0x0000;
@@ -36,12 +37,9 @@ void krPrint(Arduino_Canvas *gfx, const char *s) {
   gfx->setCursor(curX, curY);
 
   if (containsKorean(s)) {
-    // Arduino_GFX has native U8g2 font support. With U8g2 installed,
-    // unifont_h_cjk provides UTF-8 Korean without a separate bitmap font.
     gfx->setFont(u8g2_font_unifont_h_cjk);
     gfx->setUTF8Print(true);
   } else {
-    // Restore the firmware's original bitmap font for all existing English text.
     gfx->setFont(nullptr);
     gfx->setUTF8Print(false);
   }
