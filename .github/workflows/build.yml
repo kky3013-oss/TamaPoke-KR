@@ -1,0 +1,66 @@
+name: Build TamaPoke-KR
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Configure ESP32
+        run: |
+          arduino-cli config init
+          arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib update-index
+          arduino-cli lib install "GFX Library for Arduino"
+          arduino-cli lib install "SensorLib"
+          arduino-cli lib install "U8g2"
+
+      - name: Check Korean source
+        run: |
+          test -f TamaPoke.ino
+          test -f kr_text.cpp
+          test -f kr_keyboard.cpp
+          grep -q 'krTextBegin' TamaPoke.ino
+          grep -q 'krKeyboardBegin' TamaPoke.ino
+          grep -q 'U8g2lib.h' kr_text.cpp
+
+      - name: Compile ESP32-S3 firmware
+        run: |
+          rm -rf build
+          mkdir -p build
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --build-path build --warnings all
+
+      - name: Verify firmware
+        run: |
+          echo 'Build output:'
+          find build -maxdepth 2 -type f -print
+          BIN=$(find build -type f -name '*.bin' | head -1)
+          test -n "$BIN"
+          cp "$BIN" build/tamapoke.bin
+          test -s build/tamapoke.bin
+          ls -lh build/tamapoke.bin
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamapoke-kr-firmware
+          path: build/tamapoke.bin
+          if-no-files-found: error
