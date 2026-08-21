@@ -40,7 +40,9 @@ void krPrint(Arduino_Canvas *gfx, const char *s) {
     gfx->setFont(u8g2_font_unifont_h_cjk);
     gfx->setUTF8Print(true);
   } else {
-    gfx->setFont(nullptr);
+    // Explicitly select the GFXfont overload; nullptr is ambiguous because
+    // Arduino_GFX also has a U8g2 font overload.
+    gfx->setFont(static_cast<const GFXfont *>(nullptr));
     gfx->setUTF8Print(false);
   }
 
