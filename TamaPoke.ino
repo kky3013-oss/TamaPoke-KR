@@ -188,6 +188,8 @@ void setup() {
   krKeyboardBegin();
   krTextBegin();
   krKeyboardBegin();
+  krTextBegin();
+  krKeyboardBegin();
   panel->setBrightness(180);
 
   touch.setPins(TP_RESET, TP_INT);
@@ -1617,6 +1619,8 @@ void renderCard() {
 
 // ---------- teclado para renombrar ----------
 
+static bool kbKoreanMode = true;
+
 void openKeyboard() {
   kbOpen = true;
   krKeyboardOpen(pet.nick, nameBuf, sizeof(nameBuf));
@@ -1624,14 +1628,12 @@ void openKeyboard() {
 }
 
 void renderKeyboard() {
-  static bool koreanMode = false;
-  krKeyboardRender(gfx, nameBuf, koreanMode);
+  krKeyboardRender(gfx, nameBuf, kbKoreanMode);
 }
 
 void keyboardTap(int16_t x, int16_t y) {
-  static bool koreanMode = false;
   bool closeKeyboard = false;
-  krKeyboardTap(x, y, koreanMode, nameBuf, sizeof(nameBuf), closeKeyboard);
+  krKeyboardTap(x, y, kbKoreanMode, nameBuf, sizeof(nameBuf), closeKeyboard);
   nameLen = (uint8_t)strlen(nameBuf);
   if (closeKeyboard) {
     pet.rename(nameBuf);
