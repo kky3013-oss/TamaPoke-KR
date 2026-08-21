@@ -1,0 +1,66 @@
+name: Build TamaPoke-KR
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Configure ESP32
+        run: |
+          arduino-cli config init
+          arduino-cli config set board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib update-index
+          arduino-cli lib install "GFX Library for Arduino"
+          arduino-cli lib install "SensorLib"
+          arduino-cli lib install "U8g2"
+
+      - name: Remove accidental duplicate Korean init calls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('TamaPoke.ino')
+          s = p.read_text(encoding='utf-8')
+          marker = '  if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");'
+          start = s.index(marker) + len(marker)
+          end = s.index('  panel->setBrightness(180);', start)
+          block = s[start:end]
+          clean = '\n  krTextBegin();\n  krKeyboardBegin();\n'
+          s = s[:start] + clean + s[end:]
+          p.write_text(s, encoding='utf-8')
+          print('Korean init block normalized for build.')
+          PY
+
+      - name: Compile ESP32-S3 firmware
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 . --output-dir build
+
+      - name: Verify firmware
+        run: |
+          echo 'Build output:'
+          find build -maxdepth 2 -type f -print
+          test -f build/TamaPoke.ino.bin
+          cp build/TamaPoke.ino.bin build/tamapoke.bin
+          test -s build/tamapoke.bin
+          ls -lh build/tamapoke.bin
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: tamapoke-kr-firmware
+          path: build/tamapoke.bin
+          if-no-files-found: error
