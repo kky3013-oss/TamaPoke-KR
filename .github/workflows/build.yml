@@ -35,44 +35,45 @@ jobs:
           arduino-cli lib install "U8g2@2.36.5"
           arduino-cli lib list
 
-      - name: Normalize source before compile
+      - name: Prepare Arduino sketch
+        run: |
+          rm -rf sketch build
+          mkdir -p sketch/TamaPoke build
+          cp *.ino *.cpp *.h sketch/TamaPoke/
+
+      - name: Normalize Korean initialization
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('TamaPoke.ino')
+          p = Path('sketch/TamaPoke/TamaPoke.ino')
           s = p.read_text(encoding='utf-8')
-          # The source was edited repeatedly during development. Keep exactly
-          # one Korean text/keyboard initialization pair after gfx->begin().
           marker = '  if (!gfx->begin(80000000)) Serial.println("gfx->begin() fallo");'
-          if marker in s:
+          end_marker = '  panel->setBrightness(180);'
+          if marker in s and end_marker in s:
               start = s.index(marker) + len(marker)
-              end_marker = '  panel->setBrightness(180);'
-              if end_marker in s[start:]:
-                  end = start + s[start:].index(end_marker)
-                  replacement = '\n  krTextBegin();\n  krKeyboardBegin();\n'
-                  s = s[:start] + replacement + s[end:]
+              end = s.index(end_marker, start)
+              replacement = '\n  krTextBegin();\n  krKeyboardBegin();\n\n'
+              s = s[:start] + replacement + s[end:]
           p.write_text(s, encoding='utf-8')
           PY
 
       - name: Verify Korean source
         run: |
-          test -f TamaPoke.ino
-          test -f kr_text.cpp
-          test -f kr_keyboard.cpp
-          grep -q 'krTextBegin' TamaPoke.ino
-          grep -q 'krKeyboardBegin' TamaPoke.ino
-          grep -q 'u8g2_font_unifont_h_cjk' kr_text.cpp
+          test -f sketch/TamaPoke/TamaPoke.ino
+          test -f sketch/TamaPoke/kr_text.cpp
+          test -f sketch/TamaPoke/kr_keyboard.cpp
+          grep -q 'krTextBegin' sketch/TamaPoke/TamaPoke.ino
+          grep -q 'krKeyboardBegin' sketch/TamaPoke/TamaPoke.ino
+          grep -q 'u8g2_font_unifont_h_cjk' sketch/TamaPoke/kr_text.cpp
 
       - name: Compile ESP32-S3 firmware
         run: |
-          rm -rf build
-          mkdir -p build
           set -o pipefail
           arduino-cli compile \
             --fqbn esp32:esp32:esp32s3 \
             --build-path build \
             --warnings all \
-            . 2>&1 | tee build/compile.log
+            sketch/TamaPoke 2>&1 | tee build/compile.log
 
       - name: Verify firmware
         run: |
